@@ -5,7 +5,7 @@ Author: Impius Nex
 I created this script as I grew very tired of creating the same shading network over and over again for textures that I had created in Substance Painter and would like to use with Renderman.
 It prompts you to name the shader, which I would recommend, otherwise the shading network will end up being named with leading underscores.
 
-The name comes from SubstanePainterRenderMan, S, P, R, M.
+The name comes from SubstancePainterRenderMan, S, P, R, M.
 The name was unintentionally hillarious so I kept it :D
 
 Change Log:
