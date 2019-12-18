@@ -1,41 +1,84 @@
-namespace -add newsurface;
-namespace -set newsurface;
-nodeEdCreateNodeCommand "PxrSurface";
-select -r newsurface:PxrSurface1;
-rename newsurface:surface;
-nodeEdCreateNodeCommand "PxrTexture";
-select -r newsurface:PxrTexture1;
-rename newsurface:diffuse;
-connectAttr -f newsurface:diffuse.resultRGB newsurface:surface.diffuseColor;
-nodeEdCreateNodeCommand "PxrTexture";
-select -r newsurface:PxrTexture1;
-rename newsurface:speccolour;
-connectAttr -f newsurface:speccolour.resultRGB newsurface:surface.specularFaceColor;
-connectAttr -f newsurface:speccolour.resultRGB newsurface:surface.specularEdgeColor;
-nodeEdCreateNodeCommand "PxrTexture";
-select -r newsurface:PxrTexture1;
-rename newsurface:ruff;
-connectAttr -f newsurface:ruff.resultR newsurface:surface.specularRoughness;
-nodeEdCreateNodeCommand "PxrNormalMap";
-select -r newsurface:PxrNormalMap1;
-rename newsurface:normal;
-connectAttr -f newsurface:normal.resultN newsurface:surface.bumpNormal;
-nodeEdCreateNodeCommand "PxrDisplace";
-select -r newsurface:PxrDisplace1;
-rename newsurface:displace;
-disconnectAttr newsurface:displace.outColor newsurface:PxrDisplace1SG.rman__displacement;
-connectAttr -f newsurface:displace.outColor newsurface:PxrSurface1SG.rman__displacement;
-nodeEdCreateNodeCommand "PxrDispTransform";
-select -r newsurface:PxrDispTransform1;
-rename newsurface:displacetransform;
-connectAttr -f newsurface:displacetransform.resultF newsurface:displace.dispScalar;
-nodeEdCreateNodeCommand "PxrToFloat";
-select -r newsurface:PxrToFloat1;
-rename newsurface:tofloat;
-connectAttr -f newsurface:tofloat.resultF newsurface:displacetransform.dispScalar;
-nodeEdCreateNodeCommand "PxrTexture";
-select -r newsurface:PxrTexture1;
-rename newsurface:height;
-connectAttr -f newsurface:height.resultRGB newsurface:tofloat.input;
-delete newsurface:PxrDisplace1SG;
-namespace -mnr -rm ":newsurface";
+/*
+Script: sprm.mel
+Author: Impius Nex
+
+I created this script as I grew very tired of creating the same shading network over and over again for textures that I had created in Substance Painter and would like to use with Renderman.
+It prompts you to name the shader, which I would recommend, otherwise the shading network will end up being named with leading underscores.
+
+The name comes from SubstanePainterRenderMan, S, P, R, M.
+The name was unintentionally hillarious so I kept it :D
+
+Change Log:
+
+First release:
+Version: 0.1
+Date: December 18, 2019
+
+*/
+// Show the dialog box:
+string $text;
+string $newname = `promptDialog
+	-title "Name of shader"
+	-message "Base Name for the shading network:"
+	-button "OK" -button "Cancel"
+	-defaultButton "OK" -cancelButton "Cancel"
+	-dismissString "Cancel"`;
+// Use the command again in query mode to
+// get the text:
+if ($newname == "OK") {
+	$text = `promptDialog -query -text`;
+//	Create an empty namespace to work in.
+	namespace -add newsurface;
+	namespace -set newsurface;
+// First we create the PxrSurface shader and rename it using the text entered into the dialog box.
+	nodeEdCreateNodeCommand "PxrSurface";
+	select -r newsurface:PxrSurface1;
+	rename ("newsurface:" + $text + "_surface");
+// Next we start creating and connecting the PxrTexture nodes that we will load our texture files into later.
+// First the diffuse map
+	nodeEdCreateNodeCommand "PxrTexture";
+	select -r newsurface:PxrTexture1;
+	rename ("newsurface:" + $text + "_diffuse");
+	connectAttr -f ("newsurface:" + $text + "_diffuse.resultRGB") ("newsurface:" + $text + "_surface.diffuseColor");
+// Followed by the specular colour map
+	nodeEdCreateNodeCommand "PxrTexture";
+	select -r newsurface:PxrTexture1;
+	rename ("newsurface:" + $text + "_speccolour");
+	connectAttr -f ("newsurface:" + $text + "_speccolour.resultRGB") ("newsurface:" + $text + "_surface.specularFaceColor");
+	connectAttr -f ("newsurface:" + $text + "_speccolour.resultRGB") ("newsurface:" + $text + "_surface.specularEdgeColor");
+//	Then the roughness map
+	nodeEdCreateNodeCommand "PxrTexture";
+	select -r newsurface:PxrTexture1;
+	rename ("newsurface:" + $text + "_ruff");
+	connectAttr -f ("newsurface:" + $text + "_ruff.resultR") ("newsurface:" + $text + "_surface.specularRoughness");
+//	And the normal bump
+	nodeEdCreateNodeCommand "PxrNormalMap";
+	select -r newsurface:PxrNormalMap1;
+	rename ("newsurface:" + $text + "_normal");
+	connectAttr -f ("newsurface:" + $text + "_normal.resultN") ("newsurface:" + $text + "_surface.bumpNormal");
+//	Here we create a displacement shader and connect it to the same shading group as the PxrSurface shader
+	nodeEdCreateNodeCommand "PxrDisplace";
+	select -r newsurface:PxrDisplace1;
+	rename ("newsurface:" + $text + "_displace");
+	disconnectAttr ("newsurface:" + $text + "_displace.outColor") newsurface:PxrDisplace1SG.rman__displacement;
+	connectAttr -f ("newsurface:" + $text + "_displace.outColor") newsurface:PxrSurface1SG.rman__displacement;
+//	We plug in a PxrDisplaceTransform node to help with editing the displacement map
+	nodeEdCreateNodeCommand "PxrDispTransform";
+	select -r newsurface:PxrDispTransform1;
+	rename ("newsurface:" + $text + "_displacetransform");
+	connectAttr -f ("newsurface:" + $text + "_displacetransform.resultF") ("newsurface:" + $text + "_displace.dispScalar");
+//	Next we plug in a PxrToFloat node to covert the PxrTexture node to the correct input type
+	nodeEdCreateNodeCommand "PxrToFloat";
+	select -r newsurface:PxrToFloat1;
+	rename ("newsurface:" + $text + "_tofloat");
+	connectAttr -f ("newsurface:" + $text + "_tofloat.resultF") ("newsurface:" + $text + "_displacetransform.dispScalar");
+//	A final PxrTexture node for the height map to be plugged into
+	nodeEdCreateNodeCommand "PxrTexture";
+	select -r newsurface:PxrTexture1;
+	rename ("newsurface:" + $text + "_height");
+	connectAttr -f ("newsurface:" + $text + "_height.resultRGB") ("newsurface:" + $text + "_tofloat.input");
+//	We finish up here by deleting the shadergroup that was created with the PxrDisplace node
+	delete newsurface:PxrDisplace1SG;
+//	And finally we delete the namespace we used to keep things nice and tidy.
+	namespace -mnr -rm ":newsurface";
+}
