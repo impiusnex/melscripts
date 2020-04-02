@@ -14,6 +14,10 @@ First release:
 Version: 0.1
 Date: December 18, 2019
 
+Second release:
+Version: 0.2
+Date: April 2, 2020
+
 */
 // Show the dialog box:
 string $text;
@@ -34,28 +38,37 @@ if ($newname == "OK") {
 	nodeEdCreateNodeCommand "PxrSurface";
 	select -r newsurface:PxrSurface1;
 	rename ("newsurface:" + $text + "_surface");
+	connectAttr -f ("newsurface:" + $text + "_surface.outColor") newsurface:PxrSurface1SG.surfaceShader;
 // Next we start creating and connecting the PxrTexture nodes that we will load our texture files into later.
 // First the diffuse map
 	nodeEdCreateNodeCommand "PxrTexture";
 	select -r newsurface:PxrTexture1;
 	rename ("newsurface:" + $text + "_diffuse");
 	connectAttr -f ("newsurface:" + $text + "_diffuse.resultRGB") ("newsurface:" + $text + "_surface.diffuseColor");
+	setAttr ("newsurface:" + $text + "_diffuse.missingColor") -type double3 0.25 0.25 0.25 ;
+	setAttr ("newsurface:" + $text + "_diffuse.atlasStyle") 1;
 // Followed by the specular colour map
 	nodeEdCreateNodeCommand "PxrTexture";
 	select -r newsurface:PxrTexture1;
 	rename ("newsurface:" + $text + "_speccolour");
 	connectAttr -f ("newsurface:" + $text + "_speccolour.resultRGB") ("newsurface:" + $text + "_surface.specularFaceColor");
 	connectAttr -f ("newsurface:" + $text + "_speccolour.resultRGB") ("newsurface:" + $text + "_surface.specularEdgeColor");
+	setAttr ("newsurface:" + $text + "_speccolour.missingColor") -type double3 0.25 0.25 0.25 ;
+	setAttr ("newsurface:" + $text + "_speccolour.atlasStyle") 1;
 //	Then the roughness map
 	nodeEdCreateNodeCommand "PxrTexture";
 	select -r newsurface:PxrTexture1;
 	rename ("newsurface:" + $text + "_ruff");
 	connectAttr -f ("newsurface:" + $text + "_ruff.resultR") ("newsurface:" + $text + "_surface.specularRoughness");
+	connectAttr -f ("newsurface:" + $text + "_ruff.resultR") ("newsurface:" + $text + "_surface.diffuseRoughness");
+	setAttr ("newsurface:" + $text + "_ruff.missingColor") -type double3 0.25 0.25 0.25 ;
+	setAttr ("newsurface:" + $text + "_ruff.atlasStyle") 1;
 //	And the normal bump
 	nodeEdCreateNodeCommand "PxrNormalMap";
 	select -r newsurface:PxrNormalMap1;
 	rename ("newsurface:" + $text + "_normal");
 	connectAttr -f ("newsurface:" + $text + "_normal.resultN") ("newsurface:" + $text + "_surface.bumpNormal");
+	setAttr ("newsurface:" + $text + "_normal.atlasStyle") 1;
 //	Here we create a displacement shader and connect it to the same shading group as the PxrSurface shader
 	nodeEdCreateNodeCommand "PxrDisplace";
 	select -r newsurface:PxrDisplace1;
@@ -77,6 +90,11 @@ if ($newname == "OK") {
 	select -r newsurface:PxrTexture1;
 	rename ("newsurface:" + $text + "_height");
 	connectAttr -f ("newsurface:" + $text + "_height.resultRGB") ("newsurface:" + $text + "_tofloat.input");
+	setAttr ("newsurface:" + $text + "_height.missingColor") -type double3 0.25 0.25 0.25 ;
+	setAttr ("newsurface:" + $text + "_height.atlasStyle") 1;
+//	Rename Shading Group to match surface/displace material
+	select -r -ne newsurface:PxrSurface1SG;
+	rename ("newsurface:" + $text + "_SG");
 //	We finish up here by deleting the shadergroup that was created with the PxrDisplace node
 	delete newsurface:PxrDisplace1SG;
 //	And finally we delete the namespace we used to keep things nice and tidy.
